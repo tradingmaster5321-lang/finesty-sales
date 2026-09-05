@@ -1,0 +1,3 @@
+-- Finesty Sales v2 Supabase schema
+-- Full schema is included in the downloadable Finesty Sales v2 package.
+-- This repository copy is being initialized; run the full schema from the package before enabling cloud sync.

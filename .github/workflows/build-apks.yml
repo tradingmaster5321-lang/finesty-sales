@@ -28,9 +28,10 @@ jobs:
           node - <<'NODE'
           const fs=require('fs');
           const s=fs.readFileSync('app/index.html','utf8');
-          const m=s.match(/<script>([\s\S]*)<\\/script>/);
-          if(!m) throw new Error('Customer script not found');
-          new Function(m[1]);
+          const parts=s.split('<script>');
+          if(parts.length<2) throw new Error('Customer script not found');
+          const m=parts[1].split('</script>')[0];
+          new Function(m);
           console.log('Customer JavaScript syntax OK');
           NODE
       - name: Setup Java

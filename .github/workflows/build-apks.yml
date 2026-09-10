@@ -38,13 +38,33 @@ jobs:
           new Function(m);
           console.log('Customer JavaScript syntax OK');
           NODE
-      - name: Prepare branded app icons
+      - name: Prepare Finesty Sales app logos
         shell: bash
         run: |
           mkdir -p android-customer/android/app/src/main/res/drawable-nodpi
           mkdir -p android-developer/android/app/src/main/res/drawable-nodpi
-          base64 -d branding/customer_logo.b64 > android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp
-          base64 -d branding/admin_logo.b64 > android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp
+          python3 - <<'PY'
+          from pathlib import Path
+          base='''<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+          <rect width="512" height="512" rx="96" fill="#000000"/>
+          <circle cx="256" cy="256" r="236" fill="#080808" stroke="#D4AF37" stroke-width="18"/>
+          <circle cx="256" cy="256" r="214" fill="none" stroke="#6B5515" stroke-width="3"/>
+          <path d="M176 160 Q210 112 270 118 L350 118 L325 150 L270 150 Q232 150 215 174 Q197 197 215 218 L190 242 Q155 214 160 186 Q164 172 176 160Z" fill="#FFD21A"/>
+          <path d="M207 205 Q250 168 309 176 L285 207 L246 207 Q219 208 206 230 L186 249 Q172 226 182 215Z" fill="#F5B400"/>
+          <path d="M204 228 L218 228 L230 283 L306 283 L320 236 L335 236 L319 300 Q315 313 301 313 L226 313 Q212 313 209 300Z" fill="#FFD21A"/>
+          <circle cx="238" cy="331" r="10" fill="#FFD21A"/><circle cx="300" cy="331" r="10" fill="#FFD21A"/>
+          <path d="M342 287 L342 254 L360 244 L360 287Z M368 287 L368 238 L386 226 L386 287Z M394 287 L394 214 L412 199 L412 287Z" fill="#FFD21A"/>
+          <path d="M338 302 Q377 300 410 263 L422 250 L420 276 L435 264 Q408 312 350 321Z" fill="#F5B400"/>
+          <text x="256" y="380" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="62" font-weight="800" fill="#F5B400" letter-spacing="3">FINESTY</text>
+          <text x="256" y="423" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="29" font-weight="800" fill="#FFFFFF" letter-spacing="2">SALES PRO</text>
+          <text x="256" y="456" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="13" font-weight="700" fill="#FFD21A" letter-spacing="2">SMART SALES • BETTER BUSINESS</text>
+          </svg>'''
+          admin=base.replace('<text x="256" y="380"', '<rect x="181" y="38" width="150" height="48" rx="18" fill="#000000" stroke="#D4AF37" stroke-width="5"/><text x="256" y="72" text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-size="27" font-weight="800" fill="#FFD21A" letter-spacing="2">ADMIN</text>\n          <text x="256" y="380"',1)
+          Path('/tmp/customer.svg').write_text(base,encoding='utf-8')
+          Path('/tmp/admin.svg').write_text(admin,encoding='utf-8')
+          PY
+          convert -background none /tmp/customer.svg -resize 512x512 android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp
+          convert -background none /tmp/admin.svg -resize 512x512 android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp
           file android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp
           file android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp
       - name: Setup Java

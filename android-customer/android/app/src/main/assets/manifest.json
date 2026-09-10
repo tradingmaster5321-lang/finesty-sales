@@ -1,6 +1,6 @@
 {
-  "name": "Finesty Sales V1 Pro",
-  "short_name": "Finesty Sales",
+  "name": "Finesty Sales Pro",
+  "short_name": "Finesty Sales Pro",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#111111",

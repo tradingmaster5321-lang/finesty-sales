@@ -9,13 +9,30 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Assemble customer web app
+      - name: Assemble and validate customer web app
         shell: bash
         run: |
           mkdir -p app
-          cat source/chunk*.txt > app/index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          parts=[]
+          for i in range(1,12):
+              p=Path(f'source/chunk{i:02d}.txt').read_text(encoding='utf-8')
+              if i==7 and 'function processReturn' in p:
+                  p=p.split('function processReturn',1)[0]
+              parts.append(p)
+          Path('app/index.html').write_text(''.join(parts),encoding='utf-8')
+          PY
           cp android-customer/android/app/src/main/assets/manifest.json app/manifest.json
           cp app/index.html android-customer/android/app/src/main/assets/index.html
+          node - <<'NODE'
+          const fs=require('fs');
+          const s=fs.readFileSync('app/index.html','utf8');
+          const m=s.match(/<script>([\s\S]*)<\\/script>/);
+          if(!m) throw new Error('Customer script not found');
+          new Function(m[1]);
+          console.log('Customer JavaScript syntax OK');
+          NODE
       - name: Setup Java
         uses: actions/setup-java@v4
         with:

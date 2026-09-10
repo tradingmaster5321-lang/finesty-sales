@@ -38,6 +38,15 @@ jobs:
           new Function(m);
           console.log('Customer JavaScript syntax OK');
           NODE
+      - name: Prepare branded app icons
+        shell: bash
+        run: |
+          mkdir -p android-customer/android/app/src/main/res/drawable-nodpi
+          mkdir -p android-developer/android/app/src/main/res/drawable-nodpi
+          base64 -d branding/customer_logo.b64 > android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp
+          base64 -d branding/admin_logo.b64 > android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp
+          file android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp
+          file android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp
       - name: Setup Java
         uses: actions/setup-java@v4
         with:

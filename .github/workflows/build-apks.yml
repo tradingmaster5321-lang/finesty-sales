@@ -38,6 +38,9 @@ jobs:
           new Function(m);
           console.log('Customer JavaScript syntax OK');
           NODE
+      - name: Install logo renderer
+        shell: bash
+        run: python3 -m pip install --user Pillow
       - name: Prepare Finesty Sales app logos
         shell: bash
         run: |
@@ -45,12 +48,10 @@ jobs:
           mkdir -p android-developer/android/app/src/main/res/drawable-nodpi
           python3 - <<'PY'
           from PIL import Image, ImageDraw, ImageFont
-          from pathlib import Path
           S=512
           font_path='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
           def make(path, admin=False):
-              im=Image.new('RGBA',(S,S),(0,0,0,255))
-              d=ImageDraw.Draw(im)
+              im=Image.new('RGBA',(S,S),(0,0,0,255)); d=ImageDraw.Draw(im)
               d.ellipse((18,18,494,494),fill=(8,8,8,255),outline=(212,175,55,255),width=18)
               d.ellipse((36,36,476,476),outline=(107,85,21,255),width=3)
               gold=(255,210,26,255); deep=(245,180,0,255); white=(255,255,255,255)
@@ -62,21 +63,12 @@ jobs:
               d.polygon([(338,302),(377,300),(410,263),(422,250),(420,276),(435,264),(408,312),(350,321)],fill=deep)
               f1=ImageFont.truetype(font_path,62); f2=ImageFont.truetype(font_path,29); f3=ImageFont.truetype(font_path,13)
               def centered(text,y,font,fill,spacing=0):
-                  if spacing==0:
-                      box=d.textbbox((0,0),text,font=font); w=box[2]-box[0]
-                      d.text(((S-w)/2,y),text,font=font,fill=fill)
-                  else:
-                      widths=[d.textlength(c,font=font) for c in text]; w=sum(widths)+spacing*(len(text)-1); x=(S-w)/2
-                      for c,cw in zip(text,widths): d.text((x,y),c,font=font,fill=fill); x+=cw+spacing
-              centered('FINESTY',350,f1,deep,2)
-              centered('SALES PRO',398,f2,white,2)
-              centered('SMART SALES • BETTER BUSINESS',443,f3,gold,1)
+                  widths=[d.textlength(c,font=font) for c in text]; w=sum(widths)+spacing*(len(text)-1); x=(S-w)/2
+                  for c,cw in zip(text,widths): d.text((x,y),c,font=font,fill=fill); x+=cw+spacing
+              centered('FINESTY',350,f1,deep,2); centered('SALES PRO',398,f2,white,2); centered('SMART SALES • BETTER BUSINESS',443,f3,gold,1)
               if admin:
-                  badge=ImageFont.truetype(font_path,27)
-                  text='ADMIN'; box=d.textbbox((0,0),text,font=badge); w=box[2]-box[0]; h=box[3]-box[1]
-                  x=(S-w)/2; y=45
-                  d.rounded_rectangle((x-22,y-10,x+w+22,y+h+10),radius=18,fill=(0,0,0,255),outline=(212,175,55,255),width=5)
-                  d.text((x,y),text,font=badge,fill=gold)
+                  badge=ImageFont.truetype(font_path,27); text='ADMIN'; box=d.textbbox((0,0),text,font=badge); w=box[2]-box[0]; h=box[3]-box[1]; x=(S-w)/2; y=45
+                  d.rounded_rectangle((x-22,y-10,x+w+22,y+h+10),radius=18,fill=(0,0,0,255),outline=(212,175,55,255),width=5); d.text((x,y),text,font=badge,fill=gold)
               im.save(path,format='WEBP',quality=92,method=6)
           make('android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp',False)
           make('android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp',True)

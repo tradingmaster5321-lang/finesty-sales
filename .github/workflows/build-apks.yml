@@ -1,0 +1,41 @@
+name: Build Finesty Sales V1 Pro APKs
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Assemble customer web app
+        shell: bash
+        run: |
+          mkdir -p app
+          cat source/chunk*.txt > app/index.html
+          cp android-customer/android/app/src/main/assets/manifest.json app/manifest.json
+          cp app/index.html android-customer/android/app/src/main/assets/index.html
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Build customer APK
+        working-directory: android-customer/android
+        run: gradle assembleDebug --no-daemon
+      - name: Build developer APK
+        working-directory: android-developer/android
+        run: gradle assembleDebug --no-daemon
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Finesty-Sales-V1-Pro-APKs
+          path: |
+            android-customer/android/app/build/outputs/apk/debug/*.apk
+            android-developer/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

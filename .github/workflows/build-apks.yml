@@ -24,7 +24,19 @@ jobs:
                   if pos>=0:
                       p=p[:pos+len(marker)]
               parts.append(p)
-          Path('app/index.html').write_text(''.join(parts),encoding='utf-8')
+          html=''.join(parts)
+          old="function doLogin(){let p=loginPin.value,u=db.users.find(x=>x.pin===p&&x.active!==false);if(!u){alert('PIN si sahihi');return}user=u;db.sessions.push({id:id(),date:new Date().toISOString(),user:u.username});audit('LOGIN');app()}"
+          new="function doLogin(){let input=document.getElementById('loginPin'),msg=document.getElementById('loginMsg'),p=(input?.value||'').trim(),u=db.users.find(x=>String(x.pin)===p&&x.active!==false);if(!p){if(msg){msg.textContent='⚠️ Tafadhali weka PIN yako.';msg.style.color='#b36b00'}return}if(!u){if(msg){msg.textContent='❌ PIN si sahihi. Tafadhali jaribu tena.';msg.style.color='#b83232'}if(input){input.value='';input.focus()}return}if(msg){msg.textContent='✅ PIN ni sahihi. Inaingia kwenye mfumo...';msg.style.color='#14733c'}user=u;db.sessions.push({id:id(),date:new Date().toISOString(),user:u.username});audit('LOGIN');save();setTimeout(()=>app(),250)}"
+          if old not in html:
+              raise SystemExit('Expected login function not found')
+          html=html.replace(old,new,1)
+          old_ui='<button class="primary" style="width:100%" onclick=doLogin()>Ingia</button><p class=mini>'
+          new_ui='<button class="primary" style="width:100%" onclick=doLogin()>Ingia</button><div id=loginMsg class="mini" style="margin-top:12px;text-align:center;font-weight:800;min-height:20px"></div><p class=mini>'
+          if old_ui not in html:
+              raise SystemExit('Expected login UI not found')
+          html=html.replace(old_ui,new_ui,1)
+          html=html.replace("loginPin.focus()","document.getElementById('loginPin').focus()",1)
+          Path('app/index.html').write_text(html,encoding='utf-8')
           PY
           cp android-customer/android/app/src/main/assets/manifest.json app/manifest.json
           cp app/index.html android-customer/android/app/src/main/assets/index.html
@@ -36,7 +48,9 @@ jobs:
           if(start<0 || end<start) throw new Error('Customer script not found');
           const m=s.slice(start+8,end);
           new Function(m);
-          console.log('Customer JavaScript syntax OK');
+          if(!m.includes("PIN ni sahihi. Inaingia kwenye mfumo...")) throw new Error('Login success message missing');
+          if(!m.includes("PIN si sahihi. Tafadhali jaribu tena.")) throw new Error('Login error message missing');
+          console.log('Customer JavaScript syntax OK and login feedback verified');
           NODE
       - name: Install logo renderer
         shell: bash
@@ -55,9 +69,9 @@ jobs:
               d.ellipse((18,18,494,494),fill=(8,8,8,255),outline=(212,175,55,255),width=18)
               d.ellipse((36,36,476,476),outline=(107,85,21,255),width=3)
               gold=(255,210,26,255); deep=(245,180,0,255); white=(255,255,255,255)
-              d.polygon([(176,160),(210,112),(270,118),(350,118),(325,150),(270,150),(232,150),(215,174),(197,197),(215,218),(190,242),(155,214),(160,186)],fill=gold)
-              d.polygon([(207,205),(250,168),(309,176),(285,207),(246,207),(219,208),(206,230),(186,249),(172,226),(182,215)],fill=deep)
-              d.polygon([(204,228),(218,228),(230,283),(306,283),(320,236),(335,236),(319,300),(315,313),(301,313),(226,313),(212,313),(209,300)],fill=gold)
+              d.polygon([(176,160),(210,112),(270,118),(350,118),(325,150),(270,150),(232,150),(215,174),(197,197),(215,218),(190,242),(155,214),(160,186),(176,160)],fill=gold)
+              d.polygon([(207,205),(250,168),(309,176),(285,207),(246,207),(219,208),(206,230),(186,249),(172,226),(182,215),(207,205)],fill=deep)
+              d.polygon([(204,228),(218,228),(230,283),(306,283),(320,236),(335,236),(319,300),(315,313),(301,313),(226,313),(212,313),(209,300),(204,228)],fill=gold)
               d.ellipse((228,321,248,341),fill=gold); d.ellipse((290,321,310,341),fill=gold)
               d.polygon([(342,287),(342,254),(360,244),(360,287),(368,287),(368,238),(386,226),(386,287),(394,287),(394,214),(412,199),(412,287)],fill=gold)
               d.polygon([(338,302),(377,300),(410,263),(422,250),(420,276),(435,264),(408,312),(350,321)],fill=deep)
@@ -73,8 +87,6 @@ jobs:
           make('android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp',False)
           make('android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp',True)
           PY
-          file android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp
-          file android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp
       - name: Setup Java
         uses: actions/setup-java@v4
         with:

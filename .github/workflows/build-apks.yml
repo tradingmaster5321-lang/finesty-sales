@@ -28,9 +28,10 @@ jobs:
           node - <<'NODE'
           const fs=require('fs');
           const s=fs.readFileSync('app/index.html','utf8');
-          const parts=s.split('<script>');
-          if(parts.length<2) throw new Error('Customer script not found');
-          const m=parts[1].split('</script>')[0];
+          const start=s.indexOf('<script>');
+          const end=s.lastIndexOf('</script>');
+          if(start<0 || end<start) throw new Error('Customer script not found');
+          const m=s.slice(start+8,end);
           new Function(m);
           console.log('Customer JavaScript syntax OK');
           NODE

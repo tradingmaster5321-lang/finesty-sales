@@ -1,0 +1,1 @@
+Finesty Sales V1 Pro Android build requested. GitHub Actions builds customer and developer APKs from source chunks.

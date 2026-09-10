@@ -21,21 +21,38 @@ jobs:
               if i==7:
                   marker='<label>Invoice<input id=retInv></'
                   pos=p.find(marker)
-                  if pos>=0:
-                      p=p[:pos+len(marker)]
+                  if pos>=0: p=p[:pos+len(marker)]
               parts.append(p)
           html=''.join(parts)
-          old="function doLogin(){let p=loginPin.value,u=db.users.find(x=>x.pin===p&&x.active!==false);if(!u){alert('PIN si sahihi');return}user=u;db.sessions.push({id:id(),date:new Date().toISOString(),user:u.username});audit('LOGIN');app()}"
-          new="function doLogin(){let input=document.getElementById('loginPin'),msg=document.getElementById('loginMsg'),p=(input?.value||'').trim(),u=db.users.find(x=>String(x.pin)===p&&x.active!==false);if(!p){if(msg){msg.textContent='⚠️ Tafadhali weka PIN yako.';msg.style.color='#b36b00'}return}if(!u){if(msg){msg.textContent='❌ PIN si sahihi. Tafadhali jaribu tena.';msg.style.color='#b83232'}if(input){input.value='';input.focus()}return}if(msg){msg.textContent='✅ PIN ni sahihi. Inaingia kwenye mfumo...';msg.style.color='#14733c'}user=u;db.sessions.push({id:id(),date:new Date().toISOString(),user:u.username});audit('LOGIN');save();setTimeout(()=>app(),250)}"
-          if old not in html:
-              raise SystemExit('Expected login function not found')
-          html=html.replace(old,new,1)
+          # Keep the customer-facing name exact.
+          html=html.replace('Finesty Sales V1 Pro','Finesty Sales Pro')
+          # Android WebView bridge: WhatsApp opens natively when available.
+          old="function whatsapp(message,phone){let n=waNumber(phone);if(!n)return alert('Namba ya WhatsApp haijawekwa');window.open('https://wa.me/'+n+'?text='+encodeURIComponent(message),'_blank')}"
+          new="function whatsapp(message,phone){let n=waNumber(phone);if(!n)return alert('Namba ya WhatsApp haijawekwa');if(window.AndroidBridge&&typeof AndroidBridge.shareWhatsApp==='function'){AndroidBridge.shareWhatsApp(String(message),String(n));return}window.open('https://wa.me/'+n+'?text='+encodeURIComponent(message),'_blank')}"
+          if old in html: html=html.replace(old,new,1)
+          # Native PDF print/save on Android; browser print remains the fallback.
+          a=html.find('function exportPDFReport(){'); b=html.find('function exportCSV(){',a)
+          if a<0 or b<0: raise SystemExit('PDF/report functions not found')
+          fn=html[a:b]
+          fn=fn.replace(",w=window.open('','_blank');if(!w){alert('Ruhusu pop-up kwa PDF');return}w.document.write(`", ";let html=`", 1)
+          fn=fn.replace("`);w.document.close()}", "`;let fname='finesty_sales_report_'+(d.f.mode==='all'?'all':d.f.from+(d.f.to?('_to_'+d.f.to):''))+'.pdf';if(window.AndroidBridge&&typeof AndroidBridge.savePdf==='function'){AndroidBridge.savePdf(html,fname);return}let w=window.open('','_blank');if(!w){alert('Ruhusu pop-up kwa PDF');return}w.document.write(html);w.document.close()}", 1)
+          html=html[:a]+fn+html[b:]
+          # Settings: show real device-access status and request only a relevant runtime permission.
+          needle='<br><div class=card><h2>Security / Activity</h2>'
+          card='<br><div class=card><h2>📱 Device Access & Permissions</h2><p class=muted>Import CSV hutumia Android File Picker; mtumiaji anatoa access ya faili alilochagua bila ruhusa ya kusoma storage yote. WhatsApp hutumia share/open action na PDF hutumia Android Print/Save as PDF.</p><div class=row style="flex-wrap:wrap"><button class=light onclick=pickImportFromSettings()>📂 Test File Access / Import CSV</button><button class=light onclick=requestDevicePermissions()>🔐 Request Device Permissions</button></div><div id=devicePermStatus class=mini style="margin-top:10px;font-weight:800">Inatafuta hali ya permissions...</div></div>'
+          if needle in html: html=html.replace(needle,card+needle,1)
+          marker='function saveProfile(){'
+          helpers="function pickImportFromSettings(){if(!can(['Admin','Manager']))return alert('Admin/Manager pekee');if(window.AndroidBridge&&typeof AndroidBridge.openFilePicker==='function'){AndroidBridge.openFilePicker();return}go('products')}\nfunction requestDevicePermissions(){if(window.AndroidBridge&&typeof AndroidBridge.requestPermissions==='function'){AndroidBridge.requestPermissions();setTimeout(updateDevicePermissionStatus,500)}else{updateDevicePermissionStatus()}}\nfunction updateDevicePermissionStatus(){let e=document.getElementById('devicePermStatus');if(!e)return;let parts=[];if(window.AndroidBridge&&typeof AndroidBridge.getPermissionStatus==='function'){try{parts.push(AndroidBridge.getPermissionStatus())}catch(_){}}if(!parts.length)parts.push('Files: Android File Picker • PDF: Android Print/Save as PDF • WhatsApp: Share/Open action');e.textContent=parts.join(' • ')}\n"
+          if marker in html: html=html.replace(marker,helpers+marker,1)
+          # Preserve the previously fixed login feedback.
+          old_login="function doLogin(){let p=loginPin.value,u=db.users.find(x=>x.pin===p&&x.active!==false);if(!u){alert('PIN si sahihi');return}user=u;db.sessions.push({id:id(),date:new Date().toISOString(),user:u.username});audit('LOGIN');app()}"
+          new_login="function doLogin(){let input=document.getElementById('loginPin'),msg=document.getElementById('loginMsg'),p=(input?.value||'').trim(),u=db.users.find(x=>String(x.pin)===p&&x.active!==false);if(!p){if(msg){msg.textContent='⚠️ Tafadhali weka PIN yako.';msg.style.color='#b36b00'}return}if(!u){if(msg){msg.textContent='❌ PIN si sahihi. Tafadhali jaribu tena.';msg.style.color='#b83232'}if(input){input.value='';input.focus()}return}if(msg){msg.textContent='✅ PIN ni sahihi. Inaingia kwenye mfumo...';msg.style.color='#14733c'}user=u;db.sessions.push({id:id(),date:new Date().toISOString(),user:u.username});audit('LOGIN');save();setTimeout(()=>app(),250)}"
+          if old_login in html: html=html.replace(old_login,new_login,1)
           old_ui='<button class="primary" style="width:100%" onclick=doLogin()>Ingia</button><p class=mini>'
           new_ui='<button class="primary" style="width:100%" onclick=doLogin()>Ingia</button><div id=loginMsg class="mini" style="margin-top:12px;text-align:center;font-weight:800;min-height:20px"></div><p class=mini>'
-          if old_ui not in html:
-              raise SystemExit('Expected login UI not found')
-          html=html.replace(old_ui,new_ui,1)
-          html=html.replace("loginPin.focus()","document.getElementById('loginPin').focus()",1)
+          if old_ui in html: html=html.replace(old_ui,new_ui,1)
+          html=html.replace('loginPin.focus()','document.getElementById(\'loginPin\').focus()',1)
+          html=html.replace('app();setInterval(()=>{','app();setTimeout(updateDevicePermissionStatus,400);setInterval(()=>{',1)
           Path('app/index.html').write_text(html,encoding='utf-8')
           PY
           cp android-customer/android/app/src/main/assets/manifest.json app/manifest.json
@@ -48,9 +65,8 @@ jobs:
           if(start<0 || end<start) throw new Error('Customer script not found');
           const m=s.slice(start+8,end);
           new Function(m);
-          if(!m.includes("PIN ni sahihi. Inaingia kwenye mfumo...")) throw new Error('Login success message missing');
-          if(!m.includes("PIN si sahihi. Tafadhali jaribu tena.")) throw new Error('Login error message missing');
-          console.log('Customer JavaScript syntax OK and login feedback verified');
+          for (const x of ['PIN ni sahihi. Inaingia kwenye mfumo...','PIN si sahihi. Tafadhali jaribu tena.','AndroidBridge.shareWhatsApp','AndroidBridge.savePdf','AndroidBridge.openFilePicker']) if(!m.includes(x)) throw new Error('Missing '+x);
+          console.log('Customer JavaScript syntax and Android bridge hooks verified');
           NODE
       - name: Install logo renderer
         shell: bash
@@ -108,17 +124,17 @@ jobs:
           SDK_APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
           test -x "$SDK_APKSIGNER"
           mkdir -p release
-          cp android-customer/android/app/build/outputs/apk/debug/app-debug.apk release/Finesty_Sales_V1_Pro_Customer.apk
-          cp android-developer/android/app/build/outputs/apk/debug/app-debug.apk release/Finesty_Sales_V1_Pro_Developer_Admin.apk
-          "$SDK_APKSIGNER" verify --verbose release/Finesty_Sales_V1_Pro_Customer.apk
-          "$SDK_APKSIGNER" verify --verbose release/Finesty_Sales_V1_Pro_Developer_Admin.apk
-          "$SDK_APKSIGNER" verify --min-sdk-version 23 release/Finesty_Sales_V1_Pro_Customer.apk
-          "$SDK_APKSIGNER" verify --min-sdk-version 23 release/Finesty_Sales_V1_Pro_Developer_Admin.apk
+          cp android-customer/android/app/build/outputs/apk/debug/app-debug.apk release/Finesty_Sales_Pro.apk
+          cp android-developer/android/app/build/outputs/apk/debug/app-debug.apk release/Finesty_Sales_Pro_Developer_Admin.apk
+          "$SDK_APKSIGNER" verify --verbose release/Finesty_Sales_Pro.apk
+          "$SDK_APKSIGNER" verify --verbose release/Finesty_Sales_Pro_Developer_Admin.apk
+          "$SDK_APKSIGNER" verify --min-sdk-version 23 release/Finesty_Sales_Pro.apk
+          "$SDK_APKSIGNER" verify --min-sdk-version 23 release/Finesty_Sales_Pro_Developer_Admin.apk
           echo 'Installable signed APK verification completed.'
           ls -lh release/*.apk
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: Finesty-Sales-V1-Pro-APKs-INSTALLABLE
+          name: Finesty-Sales-Pro-APKs-INSTALLABLE
           path: release/*.apk
           if-no-files-found: error

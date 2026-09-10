@@ -63,8 +63,8 @@ jobs:
           Path('/tmp/customer.svg').write_text(base,encoding='utf-8')
           Path('/tmp/admin.svg').write_text(admin,encoding='utf-8')
           PY
-          convert -background none /tmp/customer.svg -resize 512x512 android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp
-          convert -background none /tmp/admin.svg -resize 512x512 android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp
+          /opt/imagemagick/bin/convert -background none /tmp/customer.svg -resize 512x512 android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp
+          /opt/imagemagick/bin/convert -background none /tmp/admin.svg -resize 512x512 android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp
           file android-customer/android/app/src/main/res/drawable-nodpi/app_icon.webp
           file android-developer/android/app/src/main/res/drawable-nodpi/app_icon.webp
       - name: Setup Java
